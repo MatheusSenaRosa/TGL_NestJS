@@ -21,7 +21,6 @@ CREATE TABLE "users" (
 CREATE TABLE "bets" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "choosenNumbers" TEXT NOT NULL,
-    "price" DECIMAL NOT NULL,
     "userId" INTEGER NOT NULL,
     "gameId" INTEGER NOT NULL,
     CONSTRAINT "bets_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
@@ -30,3 +29,6 @@ CREATE TABLE "bets" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "games_name_key" ON "games"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
