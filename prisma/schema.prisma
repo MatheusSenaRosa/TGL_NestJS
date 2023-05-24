@@ -21,6 +21,9 @@ model Game {
 
   bet Bet[]
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@map("games")
 }
 
@@ -29,8 +32,12 @@ model User {
   name String 
   email String @unique
   password String
+  hashedRefreshToken String?
 
   bets Bet[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("users")
 }
@@ -44,6 +51,8 @@ model Bet {
 
   game Game @relation(fields: [gameId], references: [id])
   gameId Int
+
+  createdAt DateTime @default(now())
 
   @@map("bets")
 }
