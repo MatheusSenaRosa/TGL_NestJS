@@ -1,14 +1,14 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateBetsDto } from "./dtos";
-import { Bet, BetJoinedWithGame } from "./types";
+import { IBet, IBetJoinedWithGame } from "./types";
 import { Game } from "@prisma/client";
 
 @Injectable()
 export class BetsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  formatToGamesIdsArray(bets: Bet[]) {
+  formatToGamesIdsArray(bets: IBet[]) {
     const gameIds = bets.reduce((acc: number[], currentGame) => {
       const isAlreadyIncluded = acc.includes(currentGame.gameId);
       if (isAlreadyIncluded) return acc;
@@ -19,7 +19,7 @@ export class BetsService {
     return gameIds;
   }
 
-  findInvalidBet(betsJoinedWithGames: BetJoinedWithGame[]) {
+  findInvalidBet(betsJoinedWithGames: IBetJoinedWithGame[]) {
     const foundInvalidBet = betsJoinedWithGames.find(
       (item) => item.choosenNumbers.length !== item.requiredAmount
     );
@@ -27,7 +27,7 @@ export class BetsService {
     return foundInvalidBet;
   }
 
-  joinBetsWithGames(bets: Bet[], games: Game[]) {
+  joinBetsWithGames(bets: IBet[], games: Game[]) {
     const betsJoinedWithGames = bets.map((bet) => {
       const game = games.find((item) => item.id === bet.gameId);
 
@@ -44,7 +44,7 @@ export class BetsService {
     return betsJoinedWithGames;
   }
 
-  formatTotalPrice(betsJoinedWithGames: BetJoinedWithGame[]) {
+  formatTotalPrice(betsJoinedWithGames: IBetJoinedWithGame[]) {
     const total = betsJoinedWithGames.reduce(
       (acc: number, cur) => acc + cur.price,
       0

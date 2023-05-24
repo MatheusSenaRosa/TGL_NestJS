@@ -10,18 +10,22 @@ import {
 } from "@nestjs/common";
 import { GamesService } from "./games.service";
 import { CreateGameDto } from "./dtos";
+import { CurrentUser, Public } from "../../decorators";
 
 @Controller("games")
 export class GamesController {
   constructor(private readonly gamesService: GamesService) {}
 
   @Get()
+  @Public()
   @HttpCode(HttpStatus.OK)
-  listGames() {
+  listGames(@CurrentUser() teste) {
+    console.log(teste);
     return this.gamesService.list();
   }
 
   @Post()
+  @Public()
   @HttpCode(HttpStatus.CREATED)
   createGame(@Body() game: CreateGameDto) {
     return this.gamesService.create(game);

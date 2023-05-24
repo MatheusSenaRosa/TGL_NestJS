@@ -1,10 +1,10 @@
-export type Bet = {
+export interface IBet {
   gameId: number;
   choosenNumbers: number[];
-};
+}
 
-export type BetJoinedWithGame = Bet & {
+export interface IBetJoinedWithGame extends IBet {
   price: number;
   requiredAmount: number;
-};
+}
 

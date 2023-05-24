@@ -3,17 +3,17 @@ import {
   ConflictException,
   Injectable,
 } from "@nestjs/common";
-import { PrismaService } from "../prisma/prisma.service";
 import { SignupDto, SigninDto } from "./dtos";
 import * as bcrypt from "bcrypt";
-import { ITokenPayload, IUser } from "./types";
 import { JwtService } from "@nestjs/jwt";
+import { UsersService } from "../users/users.service";
+import { IUser } from "./types";
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly jwtService: JwtService
+    private readonly jwtService: JwtService,
+    private readonly usersService: UsersService
   ) {}
 
   async hashData(data: string) {
@@ -22,22 +22,22 @@ export class AuthService {
     return hash;
   }
 
-  async generateToken(payload: ITokenPayload, isRefreshToken?: boolean) {
+  async generateToken(user: IUser, isRefreshToken?: boolean) {
     const oneWeek = 60 * 60 * 24 * 7;
     const fifteenMinutes = 60 * 15;
 
-    return this.jwtService.signAsync(payload, {
+    return this.jwtService.signAsync(user, {
       secret: isRefreshToken ? "rt-secret" : "at-secret",
       expiresIn: isRefreshToken ? oneWeek : fifteenMinutes,
     });
   }
 
   async getTokens(user: IUser) {
-    const payload = { sub: user.id, email: user.email, name: user.name };
+    const userPayload = { id: user.id, email: user.email, name: user.name };
 
     const [accessToken, refreshToken] = await Promise.all([
-      this.generateToken(payload),
-      this.generateToken(payload, true),
+      this.generateToken(userPayload),
+      this.generateToken(userPayload, true),
     ]);
 
     return {
@@ -49,46 +49,39 @@ export class AuthService {
   async updateRefreshToken(userId: number, refreshToken: string) {
     const hashedRefreshToken = await this.hashData(refreshToken);
 
-    await this.prisma.user.update({
-      where: {
-        id: userId,
-      },
-      data: {
-        hashedRefreshToken,
-      },
+    await this.usersService.update(userId, {
+      hashedRefreshToken,
     });
   }
 
   async signup({ name, email, password }: SignupDto) {
-    const isEmailAlreadyInUse = await this.prisma.user.findUnique({
-      where: {
-        email,
-      },
+    const isEmailAlreadyInUse = await this.usersService.findUnique({
+      email,
     });
 
     if (isEmailAlreadyInUse)
       throw new ConflictException("This e-mail is already in use");
 
     const hashedPassword = await this.hashData(password);
-    const newUser = await this.prisma.user.create({
-      data: { name, email, password: hashedPassword },
+
+    const user = await this.usersService.create({
+      name,
+      email,
+      password: hashedPassword,
     });
 
-    const { accessToken, refreshToken } = await this.getTokens(newUser);
-    await this.updateRefreshToken(newUser.id, refreshToken);
+    const tokens = await this.getTokens(user);
+    await this.updateRefreshToken(user.id, tokens.refreshToken);
 
     return {
-      ...newUser,
-      accessToken,
-      refreshToken,
+      ...user,
+      ...tokens,
     };
   }
 
   async signin({ email, password }: SigninDto) {
-    const user = await this.prisma.user.findUnique({
-      where: {
-        email,
-      },
+    const user = await this.usersService.findUnique({
+      email,
     });
 
     if (!user) throw new BadRequestException("E-mail or password is invalid");
@@ -105,6 +98,10 @@ export class AuthService {
       accessToken,
       refreshToken,
     };
+  }
+
+  async signOut(userId: number) {
+    await this.usersService.removeRefreshToken(userId);
   }
 }
 

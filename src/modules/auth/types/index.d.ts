@@ -4,9 +4,3 @@ export interface IUser {
   email: string;
 }
 
-export interface ITokenPayload {
-  sub: number;
-  email: string;
-  name: string;
-}
-
