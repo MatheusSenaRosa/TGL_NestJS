@@ -1,8 +1,16 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UseGuards,
+} from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { SignupDto, AuthDto, SigninDto } from "./dtos";
 import { Serialize } from "../../interceptors";
 import { CurrentUser, Public } from "../../decorators";
+import { RefreshTokenGuard } from "../../guards";
 
 @Controller("auth")
 @Serialize(AuthDto)
@@ -27,6 +35,14 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   signout(@CurrentUser("id") userId: number) {
     return this.authService.signOut(userId);
+  }
+
+  @Public()
+  @Post("refresh")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(RefreshTokenGuard)
+  refreshTokens(@CurrentUser() user: { refreshToken: string; id: number }) {
+    return this.authService.refreshTokens(user.id, user.refreshToken);
   }
 }
 

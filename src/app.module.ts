@@ -8,7 +8,7 @@ import {
   MeModule,
 } from "./modules";
 import { APP_GUARD } from "@nestjs/core";
-import { AtGuard } from "./guards";
+import { AccessTokenGuard } from "./guards";
 
 @Module({
   imports: [
@@ -22,7 +22,7 @@ import { AtGuard } from "./guards";
   providers: [
     {
       provide: APP_GUARD,
-      useClass: AtGuard,
+      useClass: AccessTokenGuard,
     },
   ],
 })

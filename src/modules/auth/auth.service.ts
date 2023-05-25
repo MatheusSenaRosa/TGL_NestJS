@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { SignupDto, SigninDto } from "./dtos";
 import * as bcrypt from "bcrypt";
 import { JwtService } from "@nestjs/jwt";
@@ -23,7 +28,7 @@ export class AuthService {
     const fifteenMinutes = 60 * 15;
 
     return this.jwtService.signAsync(user, {
-      secret: isRefreshToken ? "rt-secret" : "at-secret",
+      secret: isRefreshToken ? "refreshToken-secret" : "accessToken-secret",
       expiresIn: isRefreshToken ? oneWeek : fifteenMinutes,
     });
   }
@@ -42,7 +47,7 @@ export class AuthService {
     };
   }
 
-  async updateRefreshToken(userId: number, refreshToken: string) {
+  async updateUserRefreshToken(userId: number, refreshToken: string) {
     const hashedRefreshToken = await this.hashData(refreshToken);
 
     await this.usersService.update(userId, {
@@ -60,7 +65,7 @@ export class AuthService {
     });
 
     const tokens = await this.getTokens(user);
-    await this.updateRefreshToken(user.id, tokens.refreshToken);
+    await this.updateUserRefreshToken(user.id, tokens.refreshToken);
 
     return {
       ...user,
@@ -80,7 +85,7 @@ export class AuthService {
       throw new BadRequestException("E-mail or password is invalid");
 
     const { accessToken, refreshToken } = await this.getTokens(user);
-    await this.updateRefreshToken(user.id, refreshToken);
+    await this.updateUserRefreshToken(user.id, refreshToken);
 
     return {
       ...user,
@@ -91,6 +96,24 @@ export class AuthService {
 
   async signOut(userId: number) {
     await this.usersService.removeRefreshToken(userId);
+  }
+
+  async refreshTokens(userId: number, refreshToken: string) {
+    const user = await this.usersService.findUnique({ id: userId });
+
+    if (!user.hashedRefreshToken) throw new ForbiddenException();
+
+    const refreshTokenMatches = await bcrypt.compare(
+      refreshToken,
+      user.hashedRefreshToken
+    );
+
+    if (!refreshTokenMatches) throw new ForbiddenException();
+
+    const tokens = await this.getTokens(user);
+    await this.updateUserRefreshToken(user.id, tokens.refreshToken);
+
+    return tokens;
   }
 }
 
