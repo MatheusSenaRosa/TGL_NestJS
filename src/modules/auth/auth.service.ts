@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-} from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { SignupDto, SigninDto } from "./dtos";
 import * as bcrypt from "bcrypt";
 import { JwtService } from "@nestjs/jwt";
@@ -55,13 +51,6 @@ export class AuthService {
   }
 
   async signup({ name, email, password }: SignupDto) {
-    const isEmailAlreadyInUse = await this.usersService.findUnique({
-      email,
-    });
-
-    if (isEmailAlreadyInUse)
-      throw new ConflictException("This e-mail is already in use");
-
     const hashedPassword = await this.hashData(password);
 
     const user = await this.usersService.create({

@@ -7,7 +7,7 @@ export class BetsController {
   constructor(private readonly betsService: BetsService) {}
 
   @Post()
-  createBets(@Body() body: CreateBetsDto) {
+  create(@Body() body: CreateBetsDto) {
     return this.betsService.create(body);
   }
 }

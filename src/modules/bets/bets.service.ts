@@ -3,10 +3,14 @@ import { PrismaService } from "../prisma/prisma.service";
 import { CreateBetsDto } from "./dtos";
 import { IBet, IBetJoinedWithGame } from "./types";
 import { Game } from "@prisma/client";
+import { GamesService } from "../games/games.service";
 
 @Injectable()
 export class BetsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly gamesService: GamesService
+  ) {}
 
   formatToGamesIdsArray(bets: IBet[]) {
     const gameIds = bets.reduce((acc: number[], currentGame) => {
@@ -19,7 +23,7 @@ export class BetsService {
     return gameIds;
   }
 
-  findInvalidBet(betsJoinedWithGames: IBetJoinedWithGame[]) {
+  searchForInvalidBet(betsJoinedWithGames: IBetJoinedWithGame[]) {
     const foundInvalidBet = betsJoinedWithGames.find(
       (item) => item.choosenNumbers.length !== item.requiredAmount
     );
@@ -56,11 +60,7 @@ export class BetsService {
   async create(data: CreateBetsDto) {
     const gamesIds = this.formatToGamesIdsArray(data.bets);
 
-    const games = await this.prisma.game.findMany({
-      where: {
-        OR: gamesIds.map((id) => ({ id })),
-      },
-    });
+    const games = await this.gamesService.listById(gamesIds);
 
     const invalidGameId = games.find((game) => !gamesIds.includes(game.id));
     if (invalidGameId)
@@ -68,7 +68,7 @@ export class BetsService {
 
     const betsJoinedWithGames = this.joinBetsWithGames(data.bets, games);
 
-    const invalidBet = this.findInvalidBet(betsJoinedWithGames);
+    const invalidBet = this.searchForInvalidBet(betsJoinedWithGames);
     if (invalidBet)
       throw new BadRequestException(
         `gameId ${invalidBet.gameId} must have ${invalidBet.requiredAmount} choosenNumbers`
