@@ -6,10 +6,14 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { ICreateUser, IFindUnique, IUpdateUser } from "./types";
+import { RolesService } from "../roles/roles.service";
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly rolesService: RolesService
+  ) {}
 
   async findUnique(attributes: IFindUnique) {
     const user = await this.prisma.user.findUnique({
@@ -41,8 +45,12 @@ export class UsersService {
     if (emailIsAlreadyInUse)
       throw new ConflictException("This e-mail is already in use");
 
+    const customerRoleId = await this.rolesService.findUnique({
+      name: "Customer",
+    });
+
     const user = await this.prisma.user.create({
-      data: { name, email, password },
+      data: { name, email, password, roleId: Number(customerRoleId) },
     });
 
     return user;

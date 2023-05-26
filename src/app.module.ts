@@ -6,6 +6,7 @@ import {
   PrismaModule,
   UsersModule,
   MeModule,
+  RolesModule,
 } from "./modules";
 import { APP_GUARD } from "@nestjs/core";
 import { AccessTokenGuard } from "./guards";
@@ -18,6 +19,7 @@ import { AccessTokenGuard } from "./guards";
     BetsModule,
     AuthModule,
     MeModule,
+    RolesModule,
   ],
   providers: [
     {

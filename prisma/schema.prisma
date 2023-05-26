@@ -10,23 +10,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Game {
-  id Int @id @default(autoincrement())
-  name String @unique
-  description String
-  range Int
-  price Decimal
-  requiredAmount Int
-  color String
-
-  bet Bet[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("games")
-}
-
 model User {
   id Int @id @default(autoincrement())
   name String 
@@ -38,11 +21,43 @@ model User {
 
   bets Bet[]
 
+  role Role @relation(fields: [roleId], references: [id])
+  roleId Int
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("users")
 }
+
+model Role {
+  id Int @id @default(autoincrement())
+  name String @unique
+
+  users User[]
+
+  @@map("roles")
+
+}
+
+model Game {
+  id Int @id @default(autoincrement())
+  name String @unique
+  description String
+  range Int
+  price Decimal
+  requiredAmount Int
+  color String
+
+  bets Bet[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("games")
+}
+
+
 
 model Bet {
   id Int @id @default(autoincrement())
@@ -59,6 +74,3 @@ model Bet {
 
   @@map("bets")
 }
-
-
-

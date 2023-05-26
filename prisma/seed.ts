@@ -33,10 +33,29 @@ async function main() {
     },
   ];
 
-  for (let i = 0; i < games.length; i++) {
-    await prisma.game.create({
-      data: games[i],
-    });
+  const roles = [
+    {
+      name: "Administrator",
+    },
+    {
+      name: "Customer",
+    },
+  ];
+
+  const maxLength = Math.max(games.length, roles.length);
+
+  for (let i = 0; i < maxLength; i++) {
+    if (games[i]) {
+      await prisma.game.create({
+        data: games[i],
+      });
+    }
+
+    if (roles[i]) {
+      await prisma.role.create({
+        data: roles[i],
+      });
+    }
   }
 }
 
