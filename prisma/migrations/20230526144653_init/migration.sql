@@ -6,7 +6,9 @@ CREATE TABLE "games" (
     "range" INTEGER NOT NULL,
     "price" DECIMAL NOT NULL,
     "requiredAmount" INTEGER NOT NULL,
-    "color" TEXT NOT NULL
+    "color" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
 );
 
 -- CreateTable
@@ -14,7 +16,12 @@ CREATE TABLE "users" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
-    "password" TEXT NOT NULL
+    "password" TEXT NOT NULL,
+    "hashedRefreshToken" TEXT,
+    "passwordResetToken" TEXT,
+    "passwordResetExpires" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
 );
 
 -- CreateTable
@@ -23,6 +30,8 @@ CREATE TABLE "bets" (
     "choosenNumbers" TEXT NOT NULL,
     "userId" INTEGER NOT NULL,
     "gameId" INTEGER NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
     CONSTRAINT "bets_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "bets_gameId_fkey" FOREIGN KEY ("gameId") REFERENCES "games" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );

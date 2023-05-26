@@ -9,6 +9,8 @@ export class IUpdateUser {
   email?: string;
   password?: string;
   hashedRefreshToken?: string;
+  passwordToken?: string;
+  passwordTokenExpiresAt?: Date;
 }
 
 export class IFindUnique {

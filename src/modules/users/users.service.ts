@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -16,6 +17,18 @@ export class UsersService {
     });
 
     if (!user) throw new NotFoundException("User not found");
+
+    return user;
+  }
+
+  async findByPasswordToken(passwordToken: string) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        passwordToken,
+      },
+    });
+
+    if (!user) throw new BadRequestException("Invalid token");
 
     return user;
   }

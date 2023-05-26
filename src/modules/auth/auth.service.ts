@@ -2,13 +2,13 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
-  UnauthorizedException,
 } from "@nestjs/common";
-import { SignupDto, SigninDto } from "./dtos";
+import { SignupDto, SigninDto, ResetPasswordDto } from "./dtos";
 import * as bcrypt from "bcrypt";
 import { JwtService } from "@nestjs/jwt";
 import { UsersService } from "../users/users.service";
 import { IUser } from "./types";
+import * as crypto from "crypto";
 
 @Injectable()
 export class AuthService {
@@ -55,7 +55,7 @@ export class AuthService {
     });
   }
 
-  async signup({ name, email, password }: SignupDto) {
+  async signUp({ name, email, password }: SignupDto) {
     const hashedPassword = await this.hashData(password);
 
     const user = await this.usersService.create({
@@ -73,7 +73,7 @@ export class AuthService {
     };
   }
 
-  async signin({ email, password }: SigninDto) {
+  async signIn({ email, password }: SigninDto) {
     const user = await this.usersService.findUnique({
       email,
     });
@@ -114,6 +114,40 @@ export class AuthService {
     await this.updateUserRefreshToken(user.id, tokens.refreshToken);
 
     return tokens;
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.usersService.findUnique({ email });
+
+    const passwordToken = crypto.randomBytes(20).toString("hex");
+
+    const expiresAt = new Date();
+
+    const currentHour = expiresAt.getHours();
+    const hoursAmountToExpire = 2;
+    expiresAt.setHours(currentHour + hoursAmountToExpire);
+
+    await this.usersService.update(user.id, {
+      passwordToken,
+      passwordTokenExpiresAt: expiresAt,
+    });
+  }
+
+  async resetPassword({ token, password }: ResetPasswordDto) {
+    const { id: userId, passwordTokenExpiresAt } =
+      await this.usersService.findByPasswordToken(token);
+
+    const isExpired = new Date() > passwordTokenExpiresAt;
+
+    if (isExpired) throw new BadRequestException("This token has expired");
+
+    const hashedPassword = await this.hashData(password);
+
+    await this.usersService.update(userId, {
+      password: hashedPassword,
+      passwordToken: null,
+      passwordTokenExpiresAt: null,
+    });
   }
 }
 
