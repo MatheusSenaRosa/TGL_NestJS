@@ -9,12 +9,14 @@ import { JwtService } from "@nestjs/jwt";
 import { UsersService } from "../users/users.service";
 import { IUser } from "./types";
 import * as crypto from "crypto";
+import { RolesService } from "../roles/roles.service";
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
-    private readonly usersService: UsersService
+    private readonly usersService: UsersService,
+    private readonly rolesService: RolesService
   ) {}
 
   async hashData(data: string) {
@@ -34,7 +36,12 @@ export class AuthService {
   }
 
   async getTokens(user: IUser) {
-    const userPayload = { id: user.id, email: user.email, name: user.name };
+    const userPayload = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    };
 
     const [accessToken, refreshToken] = await Promise.all([
       this.generateToken(userPayload),
@@ -58,13 +65,18 @@ export class AuthService {
   async signUp({ name, email, password }: SignupDto) {
     const hashedPassword = await this.hashData(password);
 
+    const role = await this.rolesService.findUnique({
+      name: "Customer",
+    });
+
     const user = await this.usersService.create({
       name,
       email,
+      roleId: role.id,
       password: hashedPassword,
     });
 
-    const tokens = await this.getTokens(user);
+    const tokens = await this.getTokens({ ...user, role: role.name });
     await this.updateUserRefreshToken(user.id, tokens.refreshToken);
 
     return {
@@ -84,7 +96,14 @@ export class AuthService {
     if (!passwordMatches)
       throw new BadRequestException("E-mail or password is invalid");
 
-    const { accessToken, refreshToken } = await this.getTokens(user);
+    const { name: role } = await this.rolesService.findUnique({
+      id: user.roleId,
+    });
+
+    const { accessToken, refreshToken } = await this.getTokens({
+      ...user,
+      role,
+    });
     await this.updateUserRefreshToken(user.id, refreshToken);
 
     return {
@@ -110,7 +129,11 @@ export class AuthService {
 
     if (!refreshTokenMatches) throw new ForbiddenException();
 
-    const tokens = await this.getTokens(user);
+    const { name: role } = await this.rolesService.findUnique({
+      id: user.roleId,
+    });
+
+    const tokens = await this.getTokens({ ...user, role });
     await this.updateUserRefreshToken(user.id, tokens.refreshToken);
 
     return tokens;

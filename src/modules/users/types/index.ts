@@ -2,6 +2,7 @@ export interface ICreateUser {
   name: string;
   email: string;
   password: string;
+  roleId: number;
 }
 
 export class IUpdateUser {

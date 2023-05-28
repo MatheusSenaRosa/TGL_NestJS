@@ -42,7 +42,16 @@ async function main() {
     },
   ];
 
-  const maxLength = Math.max(games.length, roles.length);
+  const users = [
+    {
+      name: "Matheus Admin",
+      email: "admin@gmail.com",
+      password: "$2b$10$n07brVRslNCypsIabR7jnuG5AzOdYZE47vd/Fwx/10JBxViRg2kfm",
+      roleId: 1,
+    },
+  ];
+
+  const maxLength = Math.max(games.length, roles.length, users.length);
 
   for (let i = 0; i < maxLength; i++) {
     if (games[i]) {
@@ -54,6 +63,12 @@ async function main() {
     if (roles[i]) {
       await prisma.role.create({
         data: roles[i],
+      });
+    }
+
+    if (users[i]) {
+      await prisma.user.create({
+        data: users[i],
       });
     }
   }
