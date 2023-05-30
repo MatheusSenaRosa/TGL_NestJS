@@ -57,10 +57,10 @@ export class BetsService {
     return total;
   }
 
-  async create(data: CreateBetsDto) {
+  async create(userId: number, data: CreateBetsDto) {
     const gamesIds = this.formatToGamesIdsArray(data.bets);
 
-    const games = await this.gamesService.listById(gamesIds);
+    const games = await this.gamesService.findManyByIds(gamesIds);
 
     const invalidGameId = games.find((game) => !gamesIds.includes(game.id));
     if (invalidGameId)
@@ -84,7 +84,7 @@ export class BetsService {
       const currentGame = data.bets[i];
       const newBet = await this.prisma.bet.create({
         data: {
-          userId: data.userId,
+          userId: userId,
           gameId: currentGame.gameId,
           choosenNumbers: currentGame.choosenNumbers.join(", "),
         },
@@ -96,4 +96,3 @@ export class BetsService {
     return { bets };
   }
 }
-

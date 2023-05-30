@@ -8,7 +8,7 @@ export class AccessTokenStrategy extends PassportStrategy(Strategy, "jwt") {
   constructor() {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: "accessToken-secret",
+      secretOrKey: process.env.JWT_SECRET,
     });
   }
 
@@ -16,4 +16,3 @@ export class AccessTokenStrategy extends PassportStrategy(Strategy, "jwt") {
     return user;
   }
 }
-

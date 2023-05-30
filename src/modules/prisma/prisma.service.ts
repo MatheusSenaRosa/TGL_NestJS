@@ -10,7 +10,7 @@ export class PrismaService
     super({
       datasources: {
         db: {
-          url: "file:./dev.db",
+          url: process.env.DATABASE_URL,
         },
       },
     });
@@ -24,4 +24,3 @@ export class PrismaService
     await this.$disconnect();
   }
 }
-

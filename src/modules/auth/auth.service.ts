@@ -7,16 +7,14 @@ import { SignupDto, SigninDto, ResetPasswordDto } from "./dtos";
 import * as bcrypt from "bcrypt";
 import { JwtService } from "@nestjs/jwt";
 import { UsersService } from "../users/users.service";
-import { IUser } from "./types";
+import { ICurrentUserRefreshToken, IUser } from "./types";
 import * as crypto from "crypto";
-import { RolesService } from "../roles/roles.service";
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
-    private readonly usersService: UsersService,
-    private readonly rolesService: RolesService
+    private readonly usersService: UsersService
   ) {}
 
   async hashData(data: string) {
@@ -30,13 +28,15 @@ export class AuthService {
     const fifteenMinutes = 60 * 15;
 
     return this.jwtService.signAsync(user, {
-      secret: isRefreshToken ? "refreshToken-secret" : "accessToken-secret",
+      secret: isRefreshToken
+        ? process.env.JWT_REFRESH_SECRET
+        : process.env.JWT_SECRET,
       expiresIn: isRefreshToken ? oneWeek : fifteenMinutes,
     });
   }
 
   async getTokens(user: IUser) {
-    const userPayload = {
+    const payload = {
       id: user.id,
       email: user.email,
       name: user.name,
@@ -44,8 +44,8 @@ export class AuthService {
     };
 
     const [accessToken, refreshToken] = await Promise.all([
-      this.generateToken(userPayload),
-      this.generateToken(userPayload, true),
+      this.generateToken(payload),
+      this.generateToken(payload, true),
     ]);
 
     return {
@@ -65,22 +65,19 @@ export class AuthService {
   async signUp({ name, email, password }: SignupDto) {
     const hashedPassword = await this.hashData(password);
 
-    const role = await this.rolesService.findUnique({
-      name: "Customer",
-    });
-
     const user = await this.usersService.create({
       name,
       email,
-      roleId: role.id,
+      role: "Customer",
       password: hashedPassword,
     });
 
-    const tokens = await this.getTokens({ ...user, role: role.name });
+    const tokens = await this.getTokens({ ...user, role: "Customer" });
     await this.updateUserRefreshToken(user.id, tokens.refreshToken);
 
     return {
       ...user,
+      role: "Customer",
       ...tokens,
     };
   }
@@ -96,13 +93,8 @@ export class AuthService {
     if (!passwordMatches)
       throw new BadRequestException("E-mail or password is invalid");
 
-    const { name: role } = await this.rolesService.findUnique({
-      id: user.roleId,
-    });
-
     const { accessToken, refreshToken } = await this.getTokens({
       ...user,
-      role,
     });
     await this.updateUserRefreshToken(user.id, refreshToken);
 
@@ -113,11 +105,11 @@ export class AuthService {
     };
   }
 
-  async signOut(userId: number) {
-    await this.usersService.removeRefreshToken(userId);
-  }
-
-  async refreshTokens(userId: number, refreshToken: string) {
+  async refreshTokens({
+    id: userId,
+    refreshToken,
+    role,
+  }: ICurrentUserRefreshToken) {
     const user = await this.usersService.findUnique({ id: userId });
 
     if (!user.hashedRefreshToken) throw new ForbiddenException();
@@ -128,10 +120,6 @@ export class AuthService {
     );
 
     if (!refreshTokenMatches) throw new ForbiddenException();
-
-    const { name: role } = await this.rolesService.findUnique({
-      id: user.roleId,
-    });
 
     const tokens = await this.getTokens({ ...user, role });
     await this.updateUserRefreshToken(user.id, tokens.refreshToken);
@@ -156,7 +144,7 @@ export class AuthService {
     });
   }
 
-  async resetPassword({ token, password }: ResetPasswordDto) {
+  async resetPassword({ token, newPassword }: ResetPasswordDto) {
     const { id: userId, passwordTokenExpiresAt } =
       await this.usersService.findByPasswordToken(token);
 
@@ -164,7 +152,7 @@ export class AuthService {
 
     if (isExpired) throw new BadRequestException("This token has expired");
 
-    const hashedPassword = await this.hashData(password);
+    const hashedPassword = await this.hashData(newPassword);
 
     await this.usersService.update(userId, {
       password: hashedPassword,
@@ -173,4 +161,3 @@ export class AuthService {
     });
   }
 }
-

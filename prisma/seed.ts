@@ -51,27 +51,17 @@ async function main() {
     },
   ];
 
-  const maxLength = Math.max(games.length, roles.length, users.length);
-
-  for (let i = 0; i < maxLength; i++) {
-    if (games[i]) {
-      await prisma.game.create({
-        data: games[i],
-      });
-    }
-
-    if (roles[i]) {
-      await prisma.role.create({
-        data: roles[i],
-      });
-    }
-
-    if (users[i]) {
-      await prisma.user.create({
-        data: users[i],
-      });
-    }
-  }
+  await Promise.all([
+    prisma.game.createMany({
+      data: games,
+    }),
+    prisma.role.createMany({
+      data: roles,
+    }),
+    prisma.user.createMany({
+      data: users,
+    }),
+  ]);
 }
 
 main()
@@ -79,4 +69,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

@@ -5,3 +5,8 @@ export interface IUser {
   role: string;
 }
 
+export interface ICurrentUserRefreshToken {
+  refreshToken: string;
+  id: number;
+  role: string;
+}

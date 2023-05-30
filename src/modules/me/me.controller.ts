@@ -27,4 +27,3 @@ export class MeController {
     return this.meService.update(userId, body);
   }
 }
-

@@ -18,6 +18,7 @@ import {
 import { Serialize } from "../../interceptors";
 import { CurrentUser, Public } from "../../decorators";
 import { RefreshTokenGuard } from "../../guards";
+import { ICurrentUserRefreshToken } from "./types";
 
 @Controller("auth")
 @Serialize(AuthDto)
@@ -38,18 +39,12 @@ export class AuthController {
     return this.authService.signIn(body);
   }
 
-  @Post("signout")
-  @HttpCode(HttpStatus.NO_CONTENT)
-  signOut(@CurrentUser("id") userId: number) {
-    return this.authService.signOut(userId);
-  }
-
   @Public()
   @Post("refresh-token")
   @HttpCode(HttpStatus.OK)
   @UseGuards(RefreshTokenGuard)
-  refreshTokens(@CurrentUser() user: { refreshToken: string; id: number }) {
-    return this.authService.refreshTokens(user.id, user.refreshToken);
+  refreshTokens(@CurrentUser() user: ICurrentUserRefreshToken) {
+    return this.authService.refreshTokens(user);
   }
 
   @Public()
@@ -66,4 +61,3 @@ export class AuthController {
     return this.authService.resetPassword(body);
   }
 }
-

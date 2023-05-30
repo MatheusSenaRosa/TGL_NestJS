@@ -2,7 +2,7 @@ export interface ICreateUser {
   name: string;
   email: string;
   password: string;
-  roleId: number;
+  role: string;
 }
 
 export class IUpdateUser {
@@ -18,4 +18,3 @@ export class IFindUnique {
   id?: number;
   email?: string;
 }
-

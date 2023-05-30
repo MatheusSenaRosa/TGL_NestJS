@@ -8,6 +8,9 @@ export class AuthDto {
   name: string;
 
   @Expose()
+  role: string;
+
+  @Expose()
   email: string;
 
   @Expose()
@@ -16,4 +19,3 @@ export class AuthDto {
   @Expose()
   refreshToken: string;
 }
-

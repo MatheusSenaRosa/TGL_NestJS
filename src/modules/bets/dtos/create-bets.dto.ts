@@ -17,13 +17,9 @@ class Bet {
 }
 
 export class CreateBetsDto {
-  @IsNumber()
-  userId: number;
-
   @IsArray()
   @ArrayNotEmpty()
   @ValidateNested({ each: true })
   @Type(() => Bet)
   bets: Bet[];
 }
-
