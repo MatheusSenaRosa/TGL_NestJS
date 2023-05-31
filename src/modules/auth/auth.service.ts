@@ -130,17 +130,12 @@ export class AuthService {
   async forgotPassword(email: string) {
     const user = await this.usersService.findUnique({ email });
 
-    const passwordToken = crypto.randomBytes(20).toString("hex");
-
-    const expiresAt = new Date();
-
-    const currentHour = expiresAt.getHours();
-    const hoursAmountToExpire = 2;
-    expiresAt.setHours(currentHour + hoursAmountToExpire);
+    const { passwordToken, passwordTokenExpiresAt } =
+      this.usersService.generatePasswordToken();
 
     await this.usersService.update(user.id, {
       passwordToken,
-      passwordTokenExpiresAt: expiresAt,
+      passwordTokenExpiresAt,
     });
   }
 

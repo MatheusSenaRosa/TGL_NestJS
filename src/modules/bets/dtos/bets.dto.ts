@@ -9,6 +9,12 @@ class Bet {
   gameId: number;
 
   @Expose()
+  name: string;
+
+  @Expose()
+  price: number;
+
+  @Expose()
   @Transform(({ value }) => value.split(", ").map((item) => Number(item)))
   choosenNumbers: number[];
 }
@@ -18,4 +24,7 @@ export class BetsDto {
   @IsArray()
   @Type(() => Bet)
   bets: Bet[];
+
+  @Expose()
+  message: string;
 }

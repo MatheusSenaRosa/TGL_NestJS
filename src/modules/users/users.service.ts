@@ -7,6 +7,7 @@ import {
 import { PrismaService } from "../prisma/prisma.service";
 import { ICreateUser, IFindUnique, IUpdateUser } from "./types";
 import { RolesService } from "../roles/roles.service";
+import * as crypto from "crypto";
 
 @Injectable()
 export class UsersService {
@@ -14,6 +15,21 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly roleService: RolesService
   ) {}
+
+  generatePasswordToken() {
+    const passwordToken = crypto.randomBytes(20).toString("hex");
+
+    const expiresAt = new Date();
+
+    const currentHour = expiresAt.getHours();
+    const hoursAmountToExpire = 2;
+    expiresAt.setHours(currentHour + hoursAmountToExpire);
+
+    return {
+      passwordToken,
+      passwordTokenExpiresAt: expiresAt,
+    };
+  }
 
   async findUnique(attributes: IFindUnique) {
     const user = await this.prisma.user.findUnique({
@@ -54,9 +70,19 @@ export class UsersService {
 
     const { id: roleId } = await this.roleService.findUnique({ name: role });
 
-    const user = await this.prisma.user.create({
+    let user = await this.prisma.user.create({
       data: { name, email, password, roleId },
     });
+
+    if (role === "Administrator") {
+      const { passwordToken, passwordTokenExpiresAt } =
+        this.generatePasswordToken();
+
+      user = await this.update(user.id, {
+        passwordToken,
+        passwordTokenExpiresAt,
+      });
+    }
 
     return user;
   }

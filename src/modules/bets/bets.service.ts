@@ -23,7 +23,7 @@ export class BetsService {
     return gameIds;
   }
 
-  searchForInvalidBet(betsJoinedWithGames: IBetJoinedWithGame[]) {
+  validateRequiredAmounts(betsJoinedWithGames: IBetJoinedWithGame[]) {
     const foundInvalidBet = betsJoinedWithGames.find(
       (item) => item.choosenNumbers.length !== item.requiredAmount
     );
@@ -40,6 +40,7 @@ export class BetsService {
 
       return {
         ...bet,
+        name: game.name,
         price: Number(game.price),
         requiredAmount: Number(game.requiredAmount),
       };
@@ -62,13 +63,13 @@ export class BetsService {
 
     const games = await this.gamesService.findManyByIds(gamesIds);
 
-    const invalidGameId = games.find((game) => !gamesIds.includes(game.id));
-    if (invalidGameId)
-      throw new BadRequestException(`gameId ${invalidGameId} does not exist`);
+    const hasNotFoundId = games.find((game) => !gamesIds.includes(game.id));
+    if (hasNotFoundId)
+      throw new BadRequestException(`gameId ${hasNotFoundId} does not exist`);
 
     const betsJoinedWithGames = this.joinBetsWithGames(data.bets, games);
 
-    const invalidBet = this.searchForInvalidBet(betsJoinedWithGames);
+    const invalidBet = this.validateRequiredAmounts(betsJoinedWithGames);
     if (invalidBet)
       throw new BadRequestException(
         `gameId ${invalidBet.gameId} must have ${invalidBet.requiredAmount} choosenNumbers`
@@ -78,21 +79,30 @@ export class BetsService {
     if (totalPrice < 1)
       throw new BadRequestException("Total price must be greater than $30.00");
 
-    const bets = [];
+    const { count } = await this.prisma.bet.createMany({
+      data: data.bets.map((item) => ({
+        userId: userId,
+        gameId: item.gameId,
+        choosenNumbers: item.choosenNumbers.join(", "),
+      })),
+    });
 
-    for (let i = 0; i < data.bets.length; i++) {
-      const currentGame = data.bets[i];
-      const newBet = await this.prisma.bet.create({
-        data: {
-          userId: userId,
-          gameId: currentGame.gameId,
-          choosenNumbers: currentGame.choosenNumbers.join(", "),
-        },
-      });
+    return { message: `${count} bet${count > 1 ? "s" : ""} has been created` };
+  }
 
-      bets.push(newBet);
-    }
+  async list(userId: number) {
+    const bets = await this.prisma.bet.findMany({
+      where: {
+        userId: userId,
+      },
+    });
 
-    return { bets };
+    const gamesIds = this.formatToGamesIdsArray(bets);
+
+    const games = await this.gamesService.findManyByIds(gamesIds);
+
+    const betsJoinedWithGames = this.joinBetsWithGames(bets, games);
+
+    return { bets: betsJoinedWithGames };
   }
 }
