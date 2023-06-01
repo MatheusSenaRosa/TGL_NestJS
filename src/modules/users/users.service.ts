@@ -7,13 +7,15 @@ import {
 import { PrismaService } from "../prisma/prisma.service";
 import { ICreateUser, IFindUnique, IUpdateUser } from "./types";
 import { RolesService } from "../roles/roles.service";
+import { MailerService } from "@nestjs-modules/mailer";
 import * as crypto from "crypto";
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly roleService: RolesService
+    private readonly roleService: RolesService,
+    private readonly emailService: MailerService
   ) {}
 
   generatePasswordToken() {
@@ -36,11 +38,11 @@ export class UsersService {
       where: attributes,
     });
 
+    if (!user) throw new NotFoundException("User not found");
+
     const { name: role } = await this.roleService.findUnique({
       id: user.roleId,
     });
-
-    if (!user) throw new NotFoundException("User not found");
 
     return {
       ...user,
@@ -58,6 +60,16 @@ export class UsersService {
     if (!user) throw new BadRequestException("Invalid token");
 
     return user;
+  }
+
+  async sendAdminEmail(email: string, passwordToken: string) {
+    await this.emailService.sendMail({
+      to: email,
+      from: process.env.COMPANY_EMAIL,
+      subject: "Create a password to your account",
+      text: `Use this token to create your password: 
+${passwordToken}`,
+    });
   }
 
   async create({ name, email, password, role }: ICreateUser) {
@@ -82,6 +94,8 @@ export class UsersService {
         passwordToken,
         passwordTokenExpiresAt,
       });
+
+      await this.sendAdminEmail(user.email, passwordToken);
     }
 
     return user;
@@ -102,5 +116,15 @@ export class UsersService {
     });
 
     return user;
+  }
+
+  async remove(userId: number) {
+    const userExists = await this.findUnique({
+      id: userId,
+    });
+
+    if (!userExists) throw new NotFoundException("User not found");
+
+    await this.prisma.user.delete({ where: { id: userId } });
   }
 }

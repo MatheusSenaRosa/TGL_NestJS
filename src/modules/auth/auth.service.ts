@@ -3,18 +3,19 @@ import {
   ForbiddenException,
   Injectable,
 } from "@nestjs/common";
-import { SignupDto, SigninDto, ResetPasswordDto } from "./dtos";
+import { SignUpDto, SignInDto, ResetPasswordDto } from "./dtos";
 import * as bcrypt from "bcrypt";
 import { JwtService } from "@nestjs/jwt";
 import { UsersService } from "../users/users.service";
 import { ICurrentUserRefreshToken, IUser } from "./types";
-import * as crypto from "crypto";
+import { MailerService } from "@nestjs-modules/mailer";
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
-    private readonly usersService: UsersService
+    private readonly usersService: UsersService,
+    private readonly emailService: MailerService
   ) {}
 
   async hashData(data: string) {
@@ -62,7 +63,7 @@ export class AuthService {
     });
   }
 
-  async signUp({ name, email, password }: SignupDto) {
+  async signUp({ name, email, password }: SignUpDto) {
     const hashedPassword = await this.hashData(password);
 
     const user = await this.usersService.create({
@@ -82,7 +83,7 @@ export class AuthService {
     };
   }
 
-  async signIn({ email, password }: SigninDto) {
+  async signIn({ email, password }: SignInDto) {
     const user = await this.usersService.findUnique({
       email,
     });
@@ -136,6 +137,14 @@ export class AuthService {
     await this.usersService.update(user.id, {
       passwordToken,
       passwordTokenExpiresAt,
+    });
+
+    await this.emailService.sendMail({
+      to: user.email,
+      from: process.env.COMPANY_EMAIL,
+      subject: "Create a new password to your account",
+      text: `Use this token to update your password: 
+${passwordToken}`,
     });
   }
 

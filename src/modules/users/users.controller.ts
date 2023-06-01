@@ -1,4 +1,13 @@
-import { Body, Controller, Post, Put, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Post,
+  Delete,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  Param,
+} from "@nestjs/common";
 import { CreateUserDto, UserDto } from "./dtos";
 import { AdminGuard } from "../../guards";
 import { UsersService } from "./users.service";
@@ -12,6 +21,7 @@ export class UsersController {
 
   @Post()
   @UseGuards(AdminGuard)
+  @HttpCode(HttpStatus.CREATED)
   create(@Body() body: CreateUserDto) {
     return this.usersService.create({
       email: body.email,
@@ -19,5 +29,12 @@ export class UsersController {
       password: crypto.randomBytes(20).toString("hex"),
       role: "Administrator",
     });
+  }
+
+  @Delete(":userId")
+  @UseGuards(AdminGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(@Param("userId") userId: string) {
+    return this.usersService.remove(Number(userId));
   }
 }

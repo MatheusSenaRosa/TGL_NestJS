@@ -10,6 +10,7 @@ import {
 } from "./modules";
 import { APP_GUARD } from "@nestjs/core";
 import { AccessTokenGuard } from "./guards";
+import { MailerModule } from "@nestjs-modules/mailer";
 
 @Module({
   imports: [
@@ -20,6 +21,15 @@ import { AccessTokenGuard } from "./guards";
     AuthModule,
     MeModule,
     RolesModule,
+    MailerModule.forRoot({
+      transport: {
+        host: process.env.MAILER_HOST,
+        auth: {
+          user: process.env.MAILER_USER,
+          pass: process.env.MAILER_PASSWORD,
+        },
+      },
+    }),
   ],
   providers: [
     {
@@ -29,4 +39,3 @@ import { AccessTokenGuard } from "./guards";
   ],
 })
 export class AppModule {}
-

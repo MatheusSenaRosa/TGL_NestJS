@@ -2,7 +2,6 @@ import { BadRequestException, Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateBetsDto } from "./dtos";
 import { IBet, IBetJoinedWithGame } from "./types";
-import { Game } from "@prisma/client";
 import { GamesService } from "../games/games.service";
 
 @Injectable()
@@ -12,7 +11,7 @@ export class BetsService {
     private readonly gamesService: GamesService
   ) {}
 
-  formatToGamesIdsArray(bets: IBet[]) {
+  formatBetsToGamesIdArray(bets: IBet[]) {
     const gameIds = bets.reduce((acc: number[], currentGame) => {
       const isAlreadyIncluded = acc.includes(currentGame.gameId);
       if (isAlreadyIncluded) return acc;
@@ -23,6 +22,15 @@ export class BetsService {
     return gameIds;
   }
 
+  formatTotalPrice(betsJoinedWithGames: IBetJoinedWithGame[]) {
+    const total = betsJoinedWithGames.reduce(
+      (acc: number, cur) => acc + cur.price,
+      0
+    );
+
+    return total;
+  }
+
   validateRequiredAmounts(betsJoinedWithGames: IBetJoinedWithGame[]) {
     const foundInvalidBet = betsJoinedWithGames.find(
       (item) => item.choosenNumbers.length !== item.requiredAmount
@@ -31,7 +39,10 @@ export class BetsService {
     return foundInvalidBet;
   }
 
-  joinBetsWithGames(bets: IBet[], games: Game[]) {
+  async joinBetsWithGames(bets: IBet[]) {
+    const gamesIds = this.formatBetsToGamesIdArray(bets);
+    const games = await this.gamesService.findManyByIds(gamesIds);
+
     const betsJoinedWithGames = bets.map((bet) => {
       const game = games.find((item) => item.id === bet.gameId);
 
@@ -49,25 +60,8 @@ export class BetsService {
     return betsJoinedWithGames;
   }
 
-  formatTotalPrice(betsJoinedWithGames: IBetJoinedWithGame[]) {
-    const total = betsJoinedWithGames.reduce(
-      (acc: number, cur) => acc + cur.price,
-      0
-    );
-
-    return total;
-  }
-
-  async create(userId: number, data: CreateBetsDto) {
-    const gamesIds = this.formatToGamesIdsArray(data.bets);
-
-    const games = await this.gamesService.findManyByIds(gamesIds);
-
-    const hasNotFoundId = games.find((game) => !gamesIds.includes(game.id));
-    if (hasNotFoundId)
-      throw new BadRequestException(`gameId ${hasNotFoundId} does not exist`);
-
-    const betsJoinedWithGames = this.joinBetsWithGames(data.bets, games);
+  async createMany(userId: number, data: CreateBetsDto) {
+    const betsJoinedWithGames = await this.joinBetsWithGames(data.bets);
 
     const invalidBet = this.validateRequiredAmounts(betsJoinedWithGames);
     if (invalidBet)
@@ -91,18 +85,28 @@ export class BetsService {
   }
 
   async list(userId: number) {
-    const bets = await this.prisma.bet.findMany({
+    const storedBets = await this.prisma.bet.findMany({
+      select: {
+        id: true,
+        choosenNumbers: true,
+        game: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+          },
+        },
+      },
       where: {
         userId: userId,
       },
     });
 
-    const gamesIds = this.formatToGamesIdsArray(bets);
+    const bets = storedBets.map((item) => ({
+      ...item,
+      game: { ...item.game, price: Number(item.game.price) },
+    }));
 
-    const games = await this.gamesService.findManyByIds(gamesIds);
-
-    const betsJoinedWithGames = this.joinBetsWithGames(bets, games);
-
-    return { bets: betsJoinedWithGames };
+    return { bets };
   }
 }

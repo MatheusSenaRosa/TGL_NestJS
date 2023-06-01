@@ -1,22 +1,28 @@
 import { Expose, Transform, Type } from "class-transformer";
 import { IsArray } from "class-validator";
 
-class Bet {
+class Game {
   @Expose()
   id: number;
-
-  @Expose()
-  gameId: number;
 
   @Expose()
   name: string;
 
   @Expose()
   price: number;
+}
+
+class Bet {
+  @Expose()
+  id: number;
 
   @Expose()
   @Transform(({ value }) => value.split(", ").map((item) => Number(item)))
   choosenNumbers: number[];
+
+  @Expose()
+  @Type(() => Game)
+  game: Game;
 }
 
 export class BetsDto {

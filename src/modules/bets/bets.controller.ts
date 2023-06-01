@@ -5,16 +5,16 @@ import { CurrentUser } from "../../decorators";
 import { Serialize } from "../../interceptors";
 
 @Controller("bets")
-@Serialize(BetsDto)
 export class BetsController {
   constructor(private readonly betsService: BetsService) {}
 
   @Post()
-  create(@CurrentUser("id") userId: number, @Body() body: CreateBetsDto) {
-    return this.betsService.create(userId, body);
+  createMany(@CurrentUser("id") userId: number, @Body() body: CreateBetsDto) {
+    return this.betsService.createMany(userId, body);
   }
 
   @Get()
+  @Serialize(BetsDto)
   list(@CurrentUser("id") userId: number) {
     return this.betsService.list(userId);
   }

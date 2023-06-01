@@ -44,7 +44,7 @@ async function main() {
 
   const users = [
     {
-      name: "Matheus Admin",
+      name: "Admin",
       email: "admin@gmail.com",
       password: "$2b$10$n07brVRslNCypsIabR7jnuG5AzOdYZE47vd/Fwx/10JBxViRg2kfm",
       roleId: 1,
